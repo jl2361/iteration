@@ -61,7 +61,156 @@ z_scores(x = rbinom(1000, 1, .6))
 
 ## Let's have multiple outputs
 
-```{r}
+Let's just get the mean and sd from the vector input.
 
+```{r}
+mean_and_sd = function(x) {
+  
+   if (!is.numeric(x)) {
+    stop("Z scores only work for numbers")
+  }
+  
+  if (length(x) < 3) {
+    stop("Z scores only really work if you have three or more numbers")
+  }
+  
+  mean_x = mean(x)
+  sd_x = sd(x)
+  
+ tibble(
+   mean_x ,
+   sd_x
+ ) 
+}
 ```
+
+```{r}
+mean_and_sd(x = x_vec)
+mean_and_sd(x = 1:10)
+mean_and_sd(x = rbinom(1000, 1, .5))
+```
+
+## Let's start with simulations...
+
+```{r}
+x_vec = rnorm(n = 25, mean = 17, sd = 4)
+
+tibble(
+  mean = mean(x_vec),
+  sd = sd(x_vec)
+)
+```
+
+Can I do this using a function .... YUP
+
+Variables created inside a function stay inside the function! 
+
+```{r}
+sim_mean_sd = function(n_obs, true_mean = 7, true_sd = 4) {
+  
+  x = rnorm(n = n_obs, mean = true_mean, sd = true_sd)
+
+tibble(
+  mean = mean(x),
+  sd = sd(x)
+)
+}
+```
+
+Does it work?
+```{r}
+sim_mean_sd(n_obs = 25, true_mean = 10, true_sd = 5)
+```
+
+## Fixing bad stuff 
+```{r}
+url = "https://www.amazon.com/product-reviews/B00005JNBQ/ref=cm_cr_arp_d_viewopt_rvwer?ie=UTF8&reviewerType=avp_only_reviews&sortBy=recent&pageNumber=1"
+
+dynamite_html = read_html(url)
+
+review_titles = 
+  dynamite_html %>%
+  html_nodes(".a-text-bold span") %>%
+  html_text()
+
+review_stars = 
+  dynamite_html %>%
+  html_nodes("#cm_cr-review_list .review-rating") %>%
+  html_text() %>%
+  str_extract("^\\d") %>%
+  as.numeric()
+
+review_text = 
+  dynamite_html %>%
+  html_nodes(".review-text-content span") %>%
+  html_text() %>% 
+  str_replace_all("\n", "") %>% 
+  str_trim()
+
+reviews = tibble(
+  title = review_titles,
+  stars = review_stars,
+  text = review_text
+)
+```
+
+Let's write a funtion to get reviews. 
+
+```{r}
+read_page_reviews = function(url) {
+
+  dynamite_html = read_html(url)
+
+review_titles = 
+  dynamite_html %>%
+  html_nodes(".a-text-bold span") %>%
+  html_text()
+
+review_stars = 
+  dynamite_html %>%
+  html_nodes("#cm_cr-review_list .review-rating") %>%
+  html_text() %>%
+  str_extract("^\\d") %>%
+  as.numeric()
+
+review_text = 
+  dynamite_html %>%
+  html_nodes(".review-text-content span") %>%
+  html_text() %>% 
+  str_replace_all("\n", "") %>% 
+  str_trim()
+
+reviews = tibble(
+  title = review_titles,
+  stars = review_stars,
+  text = review_text)
+  
+reviews
+}
+```
+
+Let's try with a URL
+
+```{r}
+url = "https://www.amazon.com/product-reviews/B00005JNBQ/ref=cm_cr_arp_d_viewopt_rvwer?ie=UTF8&reviewerType=avp_only_reviews&sortBy=recent&pageNumber=2"
+
+read_page_reviews(url)
+```
+
+What good does this do?
+
+```{r}
+base_url = "https://www.amazon.com/product-reviews/B00005JNBQ/ref=cm_cr_arp_d_viewopt_rvwer?ie=UTF8&reviewerType=avp_only_reviews&sortBy=recent&pageNumber="
+
+vec_url = str_c(base_url, c(1, 2, 4, 5))
+
+dynamite_reviews = 
+  bind_rows(
+    read_page_reviews(vec_url[1]),
+    read_page_reviews(vec_url[2]),
+    read_page_reviews(vec_url[3]),
+    read_page_reviews(vec_url[4])
+  )
+```
+
 
